@@ -1,0 +1,35 @@
+FROM php:8.2-apache
+
+# Instala dependencias
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libpq-dev \
+    && docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath gd
+
+# Instala Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Configura Apache
+COPY . /var/www/html
+RUN chown -R www-data:www-data /var/www/html \
+    && a2enmod rewrite
+
+# Variables de entorno específicas de sucursal
+ENV SUCURSAL_ID=0
+ENV DB_HOST=db
+ENV DB_PORT=5432
+ENV DB_DATABASE=sucursal_0
+ENV DB_USERNAME=postgres
+ENV DB_PASSWORD=secret
+ENV APP_ENV=production
+ENV APP_DEBUG=false
+
+# Puerto expuesto
+EXPOSE 80
+
+# Script de entrada para sucursales
+COPY docker-entrypoint-sucursal.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint-sucursal.sh
+ENTRYPOINT ["docker-entrypoint-sucursal.sh"]

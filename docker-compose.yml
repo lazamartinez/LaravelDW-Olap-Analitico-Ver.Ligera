@@ -1,0 +1,57 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sucursales-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+      - ./storage/logs:/var/www/html/storage/logs
+    ports:
+      - "8000:80"
+    networks:
+      - sucursales-network
+    depends_on:
+      - db
+      - redis
+    environment:
+      - REDIS_HOST=redis
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+
+  db:
+    image: postgres:13
+    container_name: sucursales-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - sucursales-network
+
+  redis:
+    image: redis:alpine
+    container_name: sucursales-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - sucursales-network
+
+networks:
+  sucursales-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
