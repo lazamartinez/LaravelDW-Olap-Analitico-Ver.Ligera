@@ -48,4 +48,14 @@ class Sucursal extends Model
     {
         return $this->hasMany(HechoVenta::class);
     }
+
+    public function transaccionesOrigen()
+    {
+        return $this->hasMany(Transaction::class, 'origen_sucursal_id');
+    }
+
+    public function transaccionesDestino()
+    {
+        return $this->hasMany(Transaction::class, 'destino_sucursal_id');
+    }
 }

@@ -155,19 +155,19 @@ return [
     'sucursal' => [
         // Prefijo para canales de cada sucursal
         'channel_prefix' => 'sucursal_',
-        
+
         // Tiempo de vida de los canales (en segundos)
         'channel_ttl' => 3600,
-        
+
         // Máximo de conexiones por sucursal
         'max_connections' => 100,
-        
+
         // Configuración de autenticación
         'auth' => [
             'endpoint' => '/broadcasting/auth',
             'guard' => 'sucursal_api',
         ],
-        
+
         // Configuración de CORS para WebSockets
         'cors' => [
             'allowed_origins' => [
@@ -177,6 +177,24 @@ return [
             ],
             'allowed_methods' => ['GET', 'POST'],
             'allowed_headers' => ['Origin', 'Content-Type', 'X-Auth-Token', 'X-Sucursal-ID'],
+        ],
+    ],
+    
+    'connections' => [
+        'sucursal' => [
+            'driver' => 'pusher',
+            'key' => env('SUCURSAL_PUSHER_KEY'),
+            'secret' => env('SUCURSAL_PUSHER_SECRET'),
+            'app_id' => env('SUCURSAL_PUSHER_APP_ID'),
+            'options' => [
+                'cluster' => env('SUCURSAL_PUSHER_CLUSTER'),
+                'useTLS' => true,
+                'encrypted' => true,
+                'host' => env('SUCURSAL_PUSHER_HOST', '127.0.0.1'),
+                'port' => env('SUCURSAL_PUSHER_PORT', 6001),
+                'scheme' => env('SUCURSAL_PUSHER_SCHEME', 'https'),
+                'channel_authenticator' => \App\Services\SucursalChannelAuthenticator::class,
+            ],
         ],
     ],
 

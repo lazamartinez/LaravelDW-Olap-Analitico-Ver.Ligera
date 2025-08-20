@@ -3,120 +3,122 @@
 namespace App\Http\Controllers;
 
 use App\Models\Sucursal;
+use App\Services\SucursalService;
 use Illuminate\Http\Request;
+use App\Http\Resources\SucursalResource;
+use App\Events\SucursalUpdated;
+use Illuminate\Support\Facades\DB;
+use Str;
 
 class SucursalController extends Controller
 {
-    public function startDockerContainer(Sucursal $sucursal)
+    protected $sucursalService;
+
+    public function __construct(SucursalService $sucursalService)
     {
-        // Validar que la sucursal no tenga ya un contenedor corriendo
-        if ($sucursal->docker_container_id) {
-            return response()->json(['message' => 'La sucursal ya tiene un contenedor en ejecución'], 400);
-        }
-
-        // Comando para iniciar el contenedor
-        $dockerCommand = "docker run -d --name sucursal_{$sucursal->id} -p {$this->getNextAvailablePort()}:80 -e SUCURSAL_ID={$sucursal->id} sucursal-image";
-
-        exec($dockerCommand, $output, $returnVar);
-
-        if ($returnVar !== 0) {
-            return response()->json(['message' => 'Error al iniciar el contenedor', 'error' => $output], 500);
-        }
-
-        // Obtener el ID del contenedor
-        $containerId = $output[0] ?? null;
-
-        if (!$containerId) {
-            return response()->json(['message' => 'No se pudo obtener el ID del contenedor'], 500);
-        }
-
-        // Actualizar la sucursal con la información del contenedor
-        $sucursal->update([
-            'docker_container_id' => $containerId,
-            'docker_image' => 'sucursal-image',
-            'configuracion' => [
-                'puerto' => $this->getNextAvailablePort(),
-                'estado' => 'running'
-            ]
-        ]);
-
-        return response()->json(['message' => 'Contenedor iniciado exitosamente', 'container_id' => $containerId]);
+        $this->sucursalService = $sucursalService;
     }
 
-    protected function getNextAvailablePort()
+    public function index(Request $request)
     {
-        // Implementar lógica para encontrar un puerto disponible
-        // Esto es un ejemplo simplificado
-        $usedPorts = Sucursal::whereNotNull('configuracion->puerto')
-            ->pluck('configuracion->puerto')
-            ->toArray();
-
-        $port = 8001;
-        while (in_array($port, $usedPorts)) {
-            $port++;
+        $query = Sucursal::withCount(['ventas', 'productos', 'inventarios']);
+        
+        if ($request->has('activa')) {
+            $query->where('activa', $request->boolean('activa'));
         }
 
-        return $port;
+        $sucursales = $query->paginate(15);
+        return SucursalResource::collection($sucursales);
     }
 
-    public function stopDockerContainer(Sucursal $sucursal)
-    {
-        if (!$sucursal->docker_container_id) {
-            return response()->json(['message' => 'La sucursal no tiene un contenedor en ejecución'], 400);
-        }
-
-        exec("docker stop {$sucursal->docker_container_id}", $output, $returnVar);
-
-        if ($returnVar !== 0) {
-            return response()->json(['message' => 'Error al detener el contenedor', 'error' => $output], 500);
-        }
-
-        $sucursal->update([
-            'configuracion->estado' => 'stopped'
-        ]);
-
-        return response()->json(['message' => 'Contenedor detenido exitosamente']);
-    }
-
-    public function dockerContainerStatus(Sucursal $sucursal)
-    {
-        if (!$sucursal->docker_container_id) {
-            return response()->json(['status' => 'not_created'], 200);
-        }
-
-        exec("docker inspect --format='{{.State.Status}}' {$sucursal->docker_container_id}", $output, $returnVar);
-
-        if ($returnVar !== 0) {
-            return response()->json(['status' => 'error'], 500);
-        }
-
-        return response()->json(['status' => $output[0] ?? 'unknown']);
-    }
-    public function index()
-    {
-        $sucursales = Sucursal::paginate(10);
-        return view('sucursales.index', compact('sucursales'));
-    }
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'nombre' => 'required|string|max:255',
+        $validated = $this->validateRequest($request);
+        
+        return DB::transaction(function () use ($validated) {
+            $sucursal = Sucursal::create($validated);
+            
+            // Configuración inicial del contenedor Docker
+            $dockerConfig = $this->sucursalService->setupDockerContainer($sucursal);
+            
+            $sucursal->update([
+                'docker_config' => $dockerConfig,
+                'api_secret' => \Illuminate\Support\Str::random(64) // Usar Str correctamente
+            ]);
+            
+            event(new SucursalUpdated($sucursal->id, [
+                'action' => 'created',
+                'data' => $sucursal
+            ]));
+            
+            return new SucursalResource($sucursal);
+        });
+    }
+
+
+    public function show(Sucursal $sucursal)
+    {
+        $sucursal->load([
+            'productos' => fn($q) => $q->withSum('hechoVentas as ventas_total', 'monto_total'),
+            'ventas' => fn($q) => $q->latest()->limit(5)
+        ]);
+        
+        return new SucursalResource($sucursal);
+    }
+
+    public function update(Request $request, Sucursal $sucursal)
+    {
+        $validated = $this->validateRequest($request, $sucursal);
+        
+        $sucursal->update($validated);
+        
+        event(new SucursalUpdated($sucursal->id, [
+            'action' => 'updated',
+            'data' => $sucursal
+        ]));
+        
+        return new SucursalResource($sucursal);
+    }
+
+    public function destroy(Sucursal $sucursal)
+    {
+        $this->sucursalService->removeDockerContainer($sucursal);
+        
+        $sucursal->delete();
+        
+        event(new SucursalUpdated($sucursal->id, [
+            'action' => 'deleted'
+        ]));
+        
+        return response()->noContent();
+    }
+
+    public function metrics(Sucursal $sucursal)
+    {
+        $metrics = $this->sucursalService->calculateMetrics($sucursal);
+        return response()->json($metrics);
+    }
+
+    public function realtimeTransactions(Sucursal $sucursal)
+    {
+        $transactions = $this->sucursalService->getRealtimeTransactions($sucursal);
+        return response()->json($transactions);
+    }
+
+    protected function validateRequest(Request $request, $sucursal = null)
+    {
+        return $request->validate([
+            'nombre' => 'required|string|max:255|unique:sucursals,nombre,'.($sucursal?->id ?: 'NULL'),
             'direccion' => 'required|string',
             'ciudad' => 'required|string',
             'pais' => 'required|string',
             'codigo_postal' => 'nullable|string',
             'telefono' => 'nullable|string',
             'email' => 'nullable|email',
+            'latitud' => 'nullable|numeric',
+            'longitud' => 'nullable|numeric',
+            'configuracion' => 'nullable|array',
             'activa' => 'sometimes|boolean'
         ]);
-
-        // Convertir el checkbox "activa" a booleano
-        $validated['activa'] = $request->has('activa');
-
-        $sucursal = Sucursal::create($validated);
-
-        return redirect()->route('sucursales.index')
-                         ->with('success', 'Sucursal creada exitosamente');
     }
-
 }

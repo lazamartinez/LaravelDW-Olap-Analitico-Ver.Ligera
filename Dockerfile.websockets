@@ -1,7 +1,9 @@
 FROM php:8.2-cli
 
-# Instala dependencias del sistema
+# Instala dependencias del sistema necesarias para Composer y extensiones PHP
 RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
     libpq-dev \
     libbrotli-dev \
     libssl-dev \
@@ -9,24 +11,29 @@ RUN apt-get update && apt-get install -y \
     libnghttp2-dev \
     libpcre2-dev \
     zlib1g-dev \
-    && docker-php-ext-install pdo pdo_pgsql sockets
+    && docker-php-ext-install pdo pdo_pgsql sockets \
+    && rm -rf /var/lib/apt/lists/*
 
 # Instala Swoole
-RUN pecl install --configureoptions 'enable-sockets="no" enable-openssl="no" enable-http2="no" enable-mysqlnd="no" enable-swoole-json="no" enable-swoole-curl="no" enable-cares="no"' swoole && \
-    docker-php-ext-enable swoole
+RUN pecl install --configureoptions 'enable-sockets="no" enable-openssl="no" enable-http2="no" enable-mysqlnd="no" enable-swoole-json="no" enable-swoole-curl="no" enable-cares="no"' swoole \
+    && docker-php-ext-enable swoole
 
 # Instala Composer
 RUN curl -sS https://getcomposer.org/installer | php -- \
     --install-dir=/usr/local/bin --filename=composer
 
 WORKDIR /app
+
+# Copia el proyecto y el .env de ejemplo
 COPY . .
+COPY .env.example .env
 
-# Primero instala solo dependencias de producción
-RUN composer install --no-scripts --no-autoloader --optimize-autoloader
+# Instala dependencias de PHP y genera el autoload necesario
+RUN composer install --no-scripts --optimize-autoloader
 
-# Luego ejecuta los scripts manualmente omitiendo los problemáticos
-RUN composer dump-autoload --optimize && \
-    php artisan config:clear
+# Genera la clave de aplicación y limpia la configuración cacheada
+RUN php artisan key:generate
+RUN php artisan config:clear
 
+# Comando por defecto para levantar WebSockets
 CMD ["php", "artisan", "websockets:serve"]
