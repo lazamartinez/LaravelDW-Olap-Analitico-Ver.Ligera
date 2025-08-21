@@ -679,7 +679,8 @@
                 <div class="nav-item mt-4">
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <a href="#" class="nav-link" onclick="event.preventDefault(); this.closest('form').submit();">
+                        <a href="#" class="nav-link"
+                            onclick="event.preventDefault(); this.closest('form').submit();">
                             <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                         </a>
                     </form>
@@ -745,7 +746,8 @@
                         <div class="stat-value" id="sucursalesActivas">0/0</div>
                         <div class="stat-label">Sucursales Activas</div>
                         <div class="stat-change negative">
-                            <i class="fas fa-info-circle"></i> <span id="sucursalesInactivas">0</span> en mantenimiento
+                            <i class="fas fa-info-circle"></i> <span id="sucursalesInactivas">0</span> en
+                            mantenimiento
                         </div>
                     </div>
                 </div>
@@ -783,11 +785,12 @@
 
                                     <div class="stats-panel" id="mapStatsPanel">
                                         <h6>Estadísticas del Mapa</h6>
-                                        <p class="mb-1">Sucursales: <span class="badge bg-info" id="totalSucursales">0</span></p>
-                                        <p class="mb-1">Transacciones activas: <span
-                                                class="badge bg-success" id="transaccionesActivas">0</span></p>
-                                        <p class="mb-0">Productos en movimiento: <span
-                                                class="badge bg-warning" id="productosMovimiento">0</span></p>
+                                        <p class="mb-1">Sucursales: <span class="badge bg-info"
+                                                id="totalSucursales">0</span></p>
+                                        <p class="mb-1">Transacciones activas: <span class="badge bg-success"
+                                                id="transaccionesActivas">0</span></p>
+                                        <p class="mb-0">Productos en movimiento: <span class="badge bg-warning"
+                                                id="productosMovimiento">0</span></p>
                                     </div>
 
                                     <div class="cube-controls" id="cubeControls" style="display: none;">
@@ -1026,7 +1029,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Vista OLAP -->
             <div class="view-section" id="olap-view">
                 <div class="main-header">
@@ -1095,7 +1098,8 @@
                                                 <option value="between">Entre</option>
                                                 <option value="in">En</option>
                                             </select>
-                                            <input type="text" class="form-control form-control-sm" name="filtroValor" placeholder="Valor">
+                                            <input type="text" class="form-control form-control-sm"
+                                                name="filtroValor" placeholder="Valor">
                                         </div>
                                     </div>
 
@@ -1295,7 +1299,8 @@
                 <div class="main-header">
                     <h1 class="header-title">Gestión de Transacciones</h1>
                     <div class="header-actions">
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#crearTransaccionModal">
+                        <button class="btn btn-primary" data-bs-toggle="modal"
+                            data-bs-target="#crearTransaccionModal">
                             <i class="fas fa-plus me-2"></i>Nueva Transacción
                         </button>
                     </div>
@@ -1408,11 +1413,13 @@
                         </div>
                         <div class="mb-3">
                             <label for="latitud" class="form-label">Latitud</label>
-                            <input type="number" step="any" class="form-control" id="latitud" name="latitud">
+                            <input type="number" step="any" class="form-control" id="latitud"
+                                name="latitud">
                         </div>
                         <div class="mb-3">
                             <label for="longitud" class="form-label">Longitud</label>
-                            <input type="number" step="any" class="form-control" id="longitud" name="longitud">
+                            <input type="number" step="any" class="form-control" id="longitud"
+                                name="longitud">
                         </div>
                         <div class="form-check form-switch mb-3">
                             <input class="form-check-input" type="checkbox" id="activa" name="activa" checked>
@@ -1559,26 +1566,29 @@
                     @csrf
                     <div class="modal-header">
                         <h5 class="modal-title">Crear Nueva Transacción</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="origen_sucursal_id" class="form-label">Sucursal Origen</label>
-                                <select class="form-select" id="origen_sucursal_id" name="origen_sucursal_id" required>
+                                <select class="form-select" id="origen_sucursal_id" name="origen_sucursal_id"
+                                    required>
                                     <option value="">Seleccionar origen</option>
                                     <!-- Las opciones se cargarán dinámicamente -->
                                 </select>
                             </div>
                             <div class="col-md-6">
                                 <label for="destino_sucursal_id" class="form-label">Sucursal Destino</label>
-                                <select class="form-select" id="destino_sucursal_id" name="destino_sucursal_id" required>
+                                <select class="form-select" id="destino_sucursal_id" name="destino_sucursal_id"
+                                    required>
                                     <option value="">Seleccionar destino</option>
                                     <!-- Las opciones se cargarán dinámicamente -->
                                 </select>
                             </div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Productos</label>
                             <div id="productosTransaccion">
@@ -1590,7 +1600,8 @@
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <input type="number" class="form-control" name="productos[0][cantidad]" min="1" placeholder="Cantidad" required>
+                                        <input type="number" class="form-control" name="productos[0][cantidad]"
+                                            min="1" placeholder="Cantidad" required>
                                     </div>
                                     <div class="col-md-2">
                                         <button type="button" class="btn btn-danger btn-sm quitar-producto">
@@ -1603,7 +1614,7 @@
                                 <i class="fas fa-plus me-1"></i>Agregar Producto
                             </button>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="prioridad" class="form-label">Prioridad</label>
                             <select class="form-select" id="prioridad" name="prioridad" required>
@@ -1612,7 +1623,7 @@
                                 <option value="high">Alta</option>
                             </select>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="notas" class="form-label">Notas (Opcional)</label>
                             <textarea class="form-control" id="notas" name="notas" rows="2"></textarea>
@@ -1714,9 +1725,9 @@
         let salesChartInstance = null;
         let productsChartInstance = null;
         let currentView = 'dashboard';
-        
+
         // URLs de la API
-        const API_BASE = '/api';
+        const API_BASE = '';
         const API_URLS = {
             sucursales: `${API_BASE}/sucursales`,
             productos: `${API_BASE}/productos`,
@@ -1724,18 +1735,28 @@
             transacciones: `${API_BASE}/transacciones`,
             ventas: `${API_BASE}/ventas`,
             olap: `${API_BASE}/olap`,
-            etl: `${API_BASE}/etl`
+            etl: `${API_BASE}/etl`,
+            user: `${API_BASE}/user`
         };
 
-        // Configuración de AJAX
+        // Configuración de AJAX con autenticación
         $.ajaxSetup({
             headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            }
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            xhrFields: {
+                withCredentials: true
+            },
+            crossDomain: true
         });
 
         // Inicializar la aplicación
         $(document).ready(function() {
+            // Verificar autenticación
+            checkAuth();
+
             // Inicializar navegación
             initNavigation();
 
@@ -1747,6 +1768,26 @@
 
             // Inicializar la visualización 3D
             init3DView();
+        });
+
+        // Verificar autenticación
+        function checkAuth() {
+            $.ajax({
+                url: '/user',
+                method: 'GET',
+                success: function(response) {
+                    console.log('Usuario autenticado:', response);
+                },
+                error: function(xhr) {
+                    if (xhr.status === 401) {
+                        window.location.href = '/login';
+                    }
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            checkAuth();
         });
 
         // Inicializar navegación entre vistas
@@ -1783,17 +1824,17 @@
         function loadInitialData() {
             // Cargar estadísticas del dashboard
             loadDashboardStats();
-            
+
             // Cargar transacciones en tiempo real
             loadTransactions();
-            
+
             // Cargar datos para los selectores
             loadSelectOptions();
         }
 
         // Cargar datos específicos de una vista
         function loadViewData(view) {
-            switch(view) {
+            switch (view) {
                 case 'sucursales':
                     loadSucursales();
                     break;
@@ -1815,19 +1856,14 @@
         // Cargar estadísticas del dashboard
         function loadDashboardStats() {
             $.ajax({
-                url: `${API_URLS.sucursales}`,
-                method: 'GET',
-                success: function(sucursales) {
-                    updateSucursalesStats(sucursales);
-                }
-            });
-
-            // Cargar métricas desde el controlador del dashboard
-            $.ajax({
-                url: '/dashboard-metrics',
+                url: API_URLS.dashboard,
                 method: 'GET',
                 success: function(metrics) {
                     updateDashboardMetrics(metrics);
+                },
+                error: function(xhr) {
+                    console.error('Error al cargar estadísticas:', xhr);
+                    mostrarNotificacion('Error al cargar datos del dashboard', 'danger');
                 }
             });
         }
@@ -1836,7 +1872,7 @@
         function updateSucursalesStats(sucursales) {
             const totalSucursales = sucursales.length;
             const sucursalesActivas = sucursales.filter(s => s.activa).length;
-            
+
             $('#totalSucursales').text(totalSucursales);
             $('#sucursalesActivas').text(`${sucursalesActivas}/${totalSucursales}`);
             $('#sucursalesInactivas').text(totalSucursales - sucursalesActivas);
@@ -1847,13 +1883,19 @@
             $('#ventasHoy').text(`$${metrics.ventasHoy.toLocaleString()}`);
             $('#ventasMes').text(`$${metrics.ventasMes.toLocaleString()}`);
             $('#gananciaTotal').text(`$${metrics.gananciaTotal.toLocaleString()}`);
-            $('#productosVendidos').text(metrics.productosVendidos.toLocaleString());
-            
-            // Actualizar cambios porcentuales (simulados)
+            $('#sucursalesActivas').text(`${metrics.sucursalesActivas}/${metrics.totalSucursales}`);
+            $('#sucursalesInactivas').text(metrics.totalSucursales - metrics.sucursalesActivas);
+
+            // Actualizar cambios porcentuales (simulados para la demo)
             $('#ventasChange').text('12.5%');
             $('#ventasMesChange').text('8.3%');
             $('#gananciaChange').text('10.2%');
-            
+
+            // Actualizar estadísticas del mapa
+            $('#totalSucursales').text(metrics.totalSucursales);
+            $('#transaccionesActivas').text('14'); // Simulado
+            $('#productosMovimiento').text('327'); // Simulado
+
             // Actualizar gráficos
             updateCharts(metrics);
         }
@@ -1873,12 +1915,12 @@
         function renderTransactions(transacciones) {
             const container = $('#transactionsContainer');
             container.empty();
-            
+
             if (transacciones.length === 0) {
                 container.html('<p class="text-center text-muted">No hay transacciones recientes</p>');
                 return;
             }
-            
+
             transacciones.slice(0, 10).forEach(trans => {
                 const transactionEl = $(`
                     <div class="transaction-item ${trans.estado}">
@@ -1895,19 +1937,24 @@
                         </div>
                     </div>
                 `);
-                
+
                 container.append(transactionEl);
             });
         }
 
         // Obtener color del badge según el estado
         function getBadgeColor(estado) {
-            switch(estado) {
-                case 'completada': return 'success';
-                case 'pendiente': return 'warning';
-                case 'en_transito': return 'info';
-                case 'cancelada': return 'danger';
-                default: return 'secondary';
+            switch (estado) {
+                case 'completada':
+                    return 'success';
+                case 'pendiente':
+                    return 'warning';
+                case 'en_transito':
+                    return 'info';
+                case 'cancelada':
+                    return 'danger';
+                default:
+                    return 'secondary';
             }
         }
 
@@ -1921,7 +1968,7 @@
                     populateSucursalSelects(sucursales.data);
                 }
             });
-            
+
             // Cargar productos para selectores
             $.ajax({
                 url: API_URLS.productos,
@@ -1935,14 +1982,14 @@
         // Poblar selectores de sucursales
         function populateSucursalSelects(sucursales) {
             const selects = [
-                '#filtroSucursal', 
-                '#sucursal_id', 
-                '#sucursal_origen_id', 
+                '#filtroSucursal',
+                '#sucursal_id',
+                '#sucursal_origen_id',
                 '#sucursal_destino_id',
                 '#origen_sucursal_id',
                 '#destino_sucursal_id'
             ];
-            
+
             selects.forEach(selector => {
                 const $select = $(selector);
                 if ($select.length) {
@@ -1960,13 +2007,15 @@
                 '#producto_id',
                 '[name*="producto_id"]'
             ];
-            
+
             selects.forEach(selector => {
                 $(selector).each(function() {
                     const $select = $(this);
                     $select.empty().append('<option value="">Seleccionar producto</option>');
                     productos.forEach(producto => {
-                        $select.append(`<option value="${producto.id}">${producto.nombre} (${producto.codigo})</option>`);
+                        $select.append(
+                            `<option value="${producto.id}">${producto.nombre} (${producto.codigo})</option>`
+                        );
                     });
                 });
             });
@@ -1987,12 +2036,12 @@
         function renderSucursalesTable(sucursales) {
             const $tbody = $('#tablaSucursales tbody');
             $tbody.empty();
-            
+
             if (sucursales.length === 0) {
                 $tbody.html('<tr><td colspan="5" class="text-center py-4">No hay sucursales registradas</td></tr>');
                 return;
             }
-            
+
             sucursales.forEach(sucursal => {
                 const row = `
                     <tr>
@@ -2037,15 +2086,15 @@
         function renderProductosTable(productos) {
             const $tbody = $('#tablaProductos tbody');
             $tbody.empty();
-            
+
             if (productos.length === 0) {
                 $tbody.html('<tr><td colspan="6" class="text-center py-4">No hay productos registrados</td></tr>');
                 return;
             }
-            
+
             productos.forEach(producto => {
                 const alertClass = producto.stock <= 5 ? 'danger' : producto.stock <= 10 ? 'warning' : 'success';
-                
+
                 const row = `
                     <tr>
                         <td>${producto.codigo}</td>
@@ -2087,16 +2136,16 @@
         function renderInventarioTable(inventario) {
             const $tbody = $('#tablaInventario tbody');
             $tbody.empty();
-            
+
             if (inventario.length === 0) {
                 $tbody.html('<tr><td colspan="7" class="text-center py-4">No hay registros de inventario</td></tr>');
                 return;
             }
-            
+
             inventario.forEach(item => {
                 const alertClass = item.cantidad <= item.minimo_stock ? 'table-warning' : '';
                 const badgeClass = item.cantidad <= item.minimo_stock ? 'warning' : 'success';
-                
+
                 const row = `
                     <tr class="${alertClass}">
                         <td>${item.sucursal?.nombre || 'N/A'}</td>
@@ -2134,12 +2183,12 @@
         function renderTransaccionesTable(transacciones) {
             const $tbody = $('#tablaTransacciones tbody');
             $tbody.empty();
-            
+
             if (transacciones.length === 0) {
                 $tbody.html('<tr><td colspan="6" class="text-center py-4">No hay transacciones</td></tr>');
                 return;
             }
-            
+
             transacciones.forEach(transaccion => {
                 const row = `
                     <tr>
@@ -2170,8 +2219,7 @@
         function loadConsultasGuardadas() {
             // Simular carga de consultas guardadas
             setTimeout(() => {
-                const consultas = [
-                    {
+                const consultas = [{
                         id: 1,
                         nombre: 'Top 10 Productos por Ventas',
                         descripcion: 'Ventas por producto, trimestre 2023',
@@ -2190,10 +2238,10 @@
                         fecha: 'Hace 2 semanas'
                     }
                 ];
-                
+
                 const $lista = $('#consultasGuardadasList');
                 $lista.empty();
-                
+
                 consultas.forEach(consulta => {
                     $lista.append(`
                         <a href="#" class="list-group-item list-group-item-action" data-consulta-id="${consulta.id}">
@@ -2372,15 +2420,15 @@
                 method: 'GET',
                 success: function(response) {
                     const transacciones = response.data;
-                    
+
                     // Crear algunas transacciones de ejemplo entre sucursales
                     transacciones.slice(0, 5).forEach(transaccion => {
                         // Buscar sucursales de origen y destino
-                        const origen = sucursalObjects.find(obj => 
+                        const origen = sucursalObjects.find(obj =>
                             obj.userData && obj.userData.id === transaccion.origen_sucursal_id);
-                        const destino = sucursalObjects.find(obj => 
+                        const destino = sucursalObjects.find(obj =>
                             obj.userData && obj.userData.id === transaccion.destino_sucursal_id);
-                            
+
                         if (origen && destino) {
                             const originX = origen.position.x;
                             const originZ = origen.position.z;
@@ -2657,7 +2705,7 @@
         // Crear nueva sucursal
         function crearSucursal() {
             const formData = $('#formCrearSucursal').serialize();
-            
+
             $.ajax({
                 url: API_URLS.sucursales,
                 method: 'POST',
@@ -2677,7 +2725,7 @@
         // Crear nuevo producto
         function crearProducto() {
             const formData = $('#formCrearProducto').serialize();
-            
+
             $.ajax({
                 url: API_URLS.productos,
                 method: 'POST',
@@ -2697,7 +2745,7 @@
         // Transferir inventario
         function transferirInventario() {
             const formData = $('#formTransferirInventario').serialize();
-            
+
             $.ajax({
                 url: `${API_URLS.inventario}/transferir`,
                 method: 'POST',
@@ -2708,7 +2756,8 @@
                     loadInventario();
                 },
                 error: function(xhr) {
-                    mostrarNotificacion('Error al transferir inventario: ' + xhr.responseJSON.message, 'danger');
+                    mostrarNotificacion('Error al transferir inventario: ' + xhr.responseJSON.message,
+                        'danger');
                 }
             });
         }
@@ -2716,7 +2765,7 @@
         // Crear transacción
         function crearTransaccion() {
             const formData = $('#formCrearTransaccion').serialize();
-            
+
             $.ajax({
                 url: API_URLS.transacciones,
                 method: 'POST',
@@ -2753,24 +2802,26 @@
                     </div>
                 </div>
             `;
-            
+
             $('#productosTransaccion').append(nuevoProducto);
-            
+
             // Poblar el nuevo selector de productos
             const $nuevoSelect = $('#productosTransaccion .producto-item:last select');
             $nuevoSelect.empty().append('<option value="">Seleccionar producto</option>');
-            
+
             // Obtener productos y poblar el selector
             $.ajax({
                 url: API_URLS.productos,
                 method: 'GET',
                 success: function(response) {
                     response.data.forEach(producto => {
-                        $nuevoSelect.append(`<option value="${producto.id}">${producto.nombre} (${producto.codigo})</option>`);
+                        $nuevoSelect.append(
+                            `<option value="${producto.id}">${producto.nombre} (${producto.codigo})</option>`
+                        );
                     });
                 }
             });
-            
+
             // Event listener para quitar producto
             $('.quitar-producto').off('click').click(function() {
                 if ($('#productosTransaccion .producto-item').length > 1) {
@@ -2787,7 +2838,7 @@
             const medidas = $('#medidasSelect').val() || [];
             const filtros = obtenerFiltros();
             const orden = $('#ordenSelect').val();
-            
+
             // Mostrar carga
             $('#resultadosTable tbody').html(`
                 <tr>
@@ -2812,7 +2863,7 @@
                     mostrarResultadosOLAP(response);
                     actualizarMetricasOLAP(response);
                     crearGraficoOLAP(response);
-                    
+
                     mostrarNotificacion('Consulta ejecutada correctamente', 'success');
                 },
                 error: function(xhr) {
@@ -2836,7 +2887,7 @@
                 const campo = $(this).find('[name="filtroCampo"]').val();
                 const operador = $(this).find('[name="filtroOperador"]').val();
                 const valor = $(this).find('[name="filtroValor"]').val();
-                
+
                 if (campo && operador && valor) {
                     filtros.push({
                         field: campo,
@@ -2965,7 +3016,7 @@
             const dimensionX = $('#dimensionX').val();
             const dimensionY = $('#dimensionY').val();
             const dimensionZ = $('#dimensionZ').val();
-            
+
             // Aquí implementarías la visualización 3D del cubo OLAP
             // Esta es una implementación simplificada
             mostrarNotificacion(`Visualizando cubo OLAP: X=${dimensionX}, Y=${dimensionY}, Z=${dimensionZ}`, 'info');
@@ -3025,7 +3076,7 @@
                     <button class="btn btn-primary" onclick="verReporteCompleto(${sucursal.id})">Ver Reporte Completo</button>
                 </div>
             `);
-            
+
             // Abrir el sidenav
             $('#detailSidenav').addClass('open');
         }
@@ -3073,7 +3124,8 @@
                         loadSucursales();
                     },
                     error: function(xhr) {
-                        mostrarNotificacion('Error al eliminar sucursal: ' + xhr.responseJSON.message, 'danger');
+                        mostrarNotificacion('Error al eliminar sucursal: ' + xhr.responseJSON.message,
+                            'danger');
                     }
                 });
             }
@@ -3083,9 +3135,12 @@
             $.ajax({
                 url: `${API_URLS.sucursales}/${id}`,
                 method: 'PUT',
-                data: { activa: activa },
+                data: {
+                    activa: activa
+                },
                 success: function() {
-                    mostrarNotificacion(`Sucursal ${activa ? 'activada' : 'desactivada'} correctamente`, 'success');
+                    mostrarNotificacion(`Sucursal ${activa ? 'activada' : 'desactivada'} correctamente`,
+                        'success');
                     loadSucursales();
                 },
                 error: function(xhr) {
@@ -3109,7 +3164,8 @@
                         loadProductos();
                     },
                     error: function(xhr) {
-                        mostrarNotificacion('Error al eliminar producto: ' + xhr.responseJSON.message, 'danger');
+                        mostrarNotificacion('Error al eliminar producto: ' + xhr.responseJSON.message,
+                            'danger');
                     }
                 });
             }
@@ -3135,7 +3191,8 @@
                         loadInventario();
                     },
                     error: function(xhr) {
-                        mostrarNotificacion('Error al eliminar inventario: ' + xhr.responseJSON.message, 'danger');
+                        mostrarNotificacion('Error al eliminar inventario: ' + xhr.responseJSON.message,
+                            'danger');
                     }
                 });
             }
