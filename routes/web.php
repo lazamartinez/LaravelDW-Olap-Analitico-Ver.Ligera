@@ -1,18 +1,33 @@
 <?php
 
-use App\Http\Controllers\InventarioController;
-use App\Http\Controllers\OLAPDashboardController;
-use App\Http\Controllers\ProductoController;
-use App\Http\Controllers\SucursalController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\OLAPDashboardController;
 
+// Ruta principal - Redirige al login
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/login');
 });
 
-Route::get('/dashboard-olap', [OLAPDashboardController::class, 'index'])->name('olap.dashboard');
-Route::resource('sucursales', SucursalController::class);
-Route::resource('productos', ProductoController::class);
-Route::resource('inventarios', InventarioController::class)->except(['update']);
-Route::patch('/inventarios/{inventario}', [InventarioController::class, 'update']);
-Route::post('/inventarios/transferir', [InventarioController::class, 'transferir'])->name('inventarios.transferir');
+// Rutas de autenticación
+Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Ruta del dashboard (protegida)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', [OLAPDashboardController::class, 'index'])->name('dashboard');
+});
+
+// Otras rutas protegidas...
+Route::middleware(['auth'])->group(function () {
+    Route::get('/sucursales', function () {
+        return view('sucursales');
+    })->name('sucursales');
+    
+    Route::get('/productos', function () {
+        return view('productos');
+    })->name('productos');
+    
+    // ... más rutas
+});

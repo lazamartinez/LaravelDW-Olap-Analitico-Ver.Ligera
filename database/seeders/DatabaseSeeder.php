@@ -2,26 +2,21 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run()
     {
-        \App\Models\User::firstOrCreate(
-            ['email' => 'test@example.com'],
-            [
-                'name' => 'Test User',
-                'password' => bcrypt('password'),
-                'email_verified_at' => now(),
-            ]
-        );
-
-        // Resto de tu lógica de seeding...
+        $this->call([
+            UserSeeder::class,
+            SucursalSeeder::class,
+            ProductoSeeder::class,
+            InventarioSeeder::class,
+            DimensionTiempoSeeder::class,
+            VentaSeeder::class,
+            TransactionSeeder::class,
+        ]);
     }
 }

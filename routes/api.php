@@ -1,71 +1,88 @@
 <?php
 
+use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SucursalController;
 use App\Http\Controllers\ProductoController;
+use App\Http\Controllers\InventarioController;
+use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\VentaController;
 use App\Http\Controllers\OLAPController;
 use App\Http\Controllers\ETLController;
-use App\Http\Controllers\InventarioController;
+use App\Http\Controllers\DashboardController;
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register API routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "api" middleware group. Make something great!
+|
+*/
 
-// Rutas CRUD básicas
-Route::apiResource('sucursales', SucursalController::class);
-Route::apiResource('productos', ProductoController::class);
-Route::apiResource('ventas', VentaController::class);
+// Rutas públicas (autenticación)
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
 
-// Rutas OLAP
-Route::prefix('olap')->group(function () {
-    Route::get('/cubo-ventas', [OLAPController::class, 'cuboVentas']);
-    Route::get('/drill-down', [OLAPController::class, 'drillDown']);
-    Route::get('/slice-dice', [OLAPController::class, 'sliceDice']);
-    Route::get('/metricas-tiempo-real', [OLAPController::class, 'metricasTiempoReal']);
-});
-
-// Rutas ETL
-Route::prefix('etl')->group(function () {
-    Route::post('/procesar', [ETLController::class, 'procesarETL']);
-    Route::post('/cargar-tiempo', [ETLController::class, 'cargarDimensionTiempo']);
-});
-
-// Rutas para gestión de sucursales en Docker
-Route::prefix('sucursales')->group(function () {
-    Route::post('/{sucursal}/docker/start', [SucursalController::class, 'startDockerContainer']);
-    Route::post('/{sucursal}/docker/stop', [SucursalController::class, 'stopDockerContainer']);
-    Route::get('/{sucursal}/docker/status', [SucursalController::class, 'dockerContainerStatus']);
-});
-
-// Rutas para métricas
-Route::get('/productos/{producto}/metrics', [ProductoController::class, 'metrics']);
-Route::get('/sucursales/{sucursal}/metrics', [SucursalController::class, 'metrics']);
-
-// Rutas para inventario
-Route::apiResource('inventarios', InventarioController::class)->except(['update']);
-Route::post('/inventarios/transferir', [InventarioController::class, 'transferir']);
-Route::patch('/inventarios/{inventario}', [InventarioController::class, 'update']); // Ruta específica para PATCH
-
-Route::get('/sucursales', function() {
-    return App\Models\Sucursal::withCount(['ventas as ventas_hoy' => function($query) {
-        $query->whereDate('fecha_venta', today());
-    }])->get();
-});
-
-Route::get('/transacciones-recientes', function() {
-    return App\Models\Venta::with('sucursal')
-        ->orderBy('created_at', 'desc')
-        ->limit(10)
-        ->get()
-        ->map(function($venta) {
-            return [
-                'tipo' => 'venta',
-                'sucursal' => $venta->sucursal->nombre,
-                'descripcion' => 'Venta de ' . $venta->productos->count() . ' productos',
-                'monto' => $venta->total,
-                'fecha' => $venta->created_at->diffForHumans()
-            ];
-        });
+// Rutas protegidas
+Route::middleware('auth:sanctum')->group(function () {
+    // Dashboard
+    Route::get('/dashboard-metrics', [DashboardController::class, 'metrics']);
+    
+    // Sucursales
+    Route::get('/sucursales', [SucursalController::class, 'index']);
+    Route::post('/sucursales', [SucursalController::class, 'store']);
+    Route::get('/sucursales/{id}', [SucursalController::class, 'show']);
+    Route::put('/sucursales/{id}', [SucursalController::class, 'update']);
+    Route::delete('/sucursales/{id}', [SucursalController::class, 'destroy']);
+    Route::get('/sucursales/{id}/metrics', [SucursalController::class, 'metrics']);
+    
+    // Productos
+    Route::get('/productos', [ProductoController::class, 'index']);
+    Route::post('/productos', [ProductoController::class, 'store']);
+    Route::get('/productos/{id}', [ProductoController::class, 'show']);
+    Route::put('/productos/{id}', [ProductoController::class, 'update']);
+    Route::delete('/productos/{id}', [ProductoController::class, 'destroy']);
+    Route::get('/productos/{id}/metrics', [ProductoController::class, 'metrics']);
+    
+    // Inventario
+    Route::get('/inventario', [InventarioController::class, 'index']);
+    Route::post('/inventario', [InventarioController::class, 'store']);
+    Route::get('/inventario/{id}', [InventarioController::class, 'show']);
+    Route::put('/inventario/{id}', [InventarioController::class, 'update']);
+    Route::delete('/inventario/{id}', [InventarioController::class, 'destroy']);
+    Route::post('/inventario/transferir', [InventarioController::class, 'transferir']);
+    
+    // Transacciones
+    Route::get('/transacciones', [TransactionController::class, 'index']);
+    Route::post('/transacciones', [TransactionController::class, 'store']);
+    Route::get('/transacciones/{id}', [TransactionController::class, 'show']);
+    Route::put('/transacciones/{id}/estado', [TransactionController::class, 'updateStatus']);
+    Route::get('/transacciones/realtime', [TransactionController::class, 'realtimeFeed']);
+    
+    // Ventas
+    Route::get('/ventas', [VentaController::class, 'index']);
+    Route::post('/ventas', [VentaController::class, 'store']);
+    Route::get('/ventas/{id}', [VentaController::class, 'show']);
+    
+    // OLAP
+    Route::post('/olap/cube', [OLAPController::class, 'cube3D']);
+    Route::post('/olap/drilldown', [OLAPController::class, 'drillDown3D']);
+    Route::get('/olap/timeseries', [OLAPController::class, 'timeSeriesAnalysis']);
+    Route::get('/olap/spatial', [OLAPController::class, 'spatialAnalysis']);
+    
+    // ETL
+    Route::post('/etl/process', [ETLController::class, 'procesarETL']);
+    Route::post('/etl/dimension-tiempo', [ETLController::class, 'cargarDimensionTiempo']);
+    
+    // Usuario actual
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+    
+    // Logout
+    Route::post('/logout', [AuthController::class, 'logout']);
 });

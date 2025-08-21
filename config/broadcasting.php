@@ -179,21 +179,16 @@ return [
             'allowed_headers' => ['Origin', 'Content-Type', 'X-Auth-Token', 'X-Sucursal-ID'],
         ],
     ],
-    
+
     'connections' => [
-        'sucursal' => [
+        'pusher' => [
             'driver' => 'pusher',
-            'key' => env('SUCURSAL_PUSHER_KEY'),
-            'secret' => env('SUCURSAL_PUSHER_SECRET'),
-            'app_id' => env('SUCURSAL_PUSHER_APP_ID'),
+            'key' => env('PUSHER_APP_KEY'),
+            'secret' => env('PUSHER_APP_SECRET'),
+            'app_id' => env('PUSHER_APP_ID'),
             'options' => [
-                'cluster' => env('SUCURSAL_PUSHER_CLUSTER'),
+                'cluster' => env('PUSHER_APP_CLUSTER'),
                 'useTLS' => true,
-                'encrypted' => true,
-                'host' => env('SUCURSAL_PUSHER_HOST', '127.0.0.1'),
-                'port' => env('SUCURSAL_PUSHER_PORT', 6001),
-                'scheme' => env('SUCURSAL_PUSHER_SCHEME', 'https'),
-                'channel_authenticator' => \App\Services\SucursalChannelAuthenticator::class,
             ],
         ],
     ],
