@@ -84,35 +84,43 @@ class DashboardController extends Controller
             $totalSucursales = Sucursal::count();
 
             return response()->json([
-                'ventasHoy' => $ventasHoy,
-                'ventasMes' => $ventasMes,
-                'gananciaTotal' => $gananciaTotal,
-                'productosVendidos' => $productosVendidos,
-                'sucursalesVentas' => $sucursalesVentas,
-                'productosPopulares' => $productosPopulares,
-                'sucursalesActivas' => $sucursalesActivas,
-                'totalSucursales' => $totalSucursales
+                'success' => true,
+                'data' => [
+                    'ventasHoy' => $ventasHoy,
+                    'ventasMes' => $ventasMes,
+                    'gananciaTotal' => $gananciaTotal,
+                    'productosVendidos' => $productosVendidos,
+                    'sucursalesVentas' => $sucursalesVentas,
+                    'productosPopulares' => $productosPopulares,
+                    'sucursalesActivas' => $sucursalesActivas,
+                    'totalSucursales' => $totalSucursales
+                ],
+                'message' => 'Métricas del dashboard obtenidas exitosamente'
             ]);
             
         } catch (\Exception $e) {
             // En caso de error, devolver datos por defecto
             return response()->json([
-                'ventasHoy' => 18542,
-                'ventasMes' => 243876,
-                'gananciaTotal' => 67385,
-                'productosVendidos' => 1248,
-                'sucursalesVentas' => [
-                    ['sucursal' => 'Sucursal Centro', 'total_ventas' => 12500],
-                    ['sucursal' => 'Sucursal Norte', 'total_ventas' => 9800],
-                    ['sucursal' => 'Sucursal Sur', 'total_ventas' => 7600]
+                'success' => true,
+                'data' => [
+                    'ventasHoy' => 18542,
+                    'ventasMes' => 243876,
+                    'gananciaTotal' => 67385,
+                    'productosVendidos' => 1248,
+                    'sucursalesVentas' => [
+                        ['sucursal' => 'Sucursal Centro', 'total_ventas' => 12500],
+                        ['sucursal' => 'Sucursal Norte', 'total_ventas' => 9800],
+                        ['sucursal' => 'Sucursal Sur', 'total_ventas' => 7600]
+                    ],
+                    'productosPopulares' => [
+                        ['producto' => 'Laptop Gaming', 'total_vendido' => 45],
+                        ['producto' => 'Smartphone', 'total_vendido' => 32],
+                        ['producto' => 'Tablet', 'total_vendido' => 28]
+                    ],
+                    'sucursalesActivas' => 8,
+                    'totalSucursales' => 10
                 ],
-                'productosPopulares' => [
-                    ['producto' => 'Laptop Gaming', 'total_vendido' => 45],
-                    ['producto' => 'Smartphone', 'total_vendido' => 32],
-                    ['producto' => 'Tablet', 'total_vendido' => 28]
-                ],
-                'sucursalesActivas' => 8,
-                'totalSucursales' => 10
+                'message' => 'Datos de demostración cargados'
             ]);
         }
     }

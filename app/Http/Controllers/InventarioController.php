@@ -12,196 +12,274 @@ use App\Http\Resources\InventarioResource;
 class InventarioController extends Controller
 {
     /**
-     * Display a listing of the inventory.
-     *
-     * @return \Illuminate\Http\Response
+     * Display a listing of the inventory for web.
      */
     public function index()
     {
-        // Puedes filtrar por sucursal o producto con parámetros de consulta
-        $query = Inventario::query()
-            ->with(['sucursal', 'producto'])
-            ->orderBy('sucursal_id')
-            ->orderBy('producto_id');
+        $inventarios = Inventario::with(['sucursal', 'producto'])->paginate(15);
+        return view('inventario.index', compact('inventarios'));
+    }
 
-        if (request()->has('sucursal_id')) {
-            $query->where('sucursal_id', request('sucursal_id'));
+    /**
+     * Display a listing of the inventory for API.
+     */
+    public function apiIndex(Request $request)
+    {
+        try {
+            $query = Inventario::with(['sucursal', 'producto'])
+                ->orderBy('sucursal_id')
+                ->orderBy('producto_id');
+
+            if ($request->has('sucursal_id')) {
+                $query->where('sucursal_id', $request->sucursal_id);
+            }
+
+            if ($request->has('producto_id')) {
+                $query->where('producto_id', $request->producto_id);
+            }
+
+            if ($request->has('alertas')) {
+                $query->whereRaw('cantidad <= minimo_stock');
+            }
+
+            if ($request->has('search')) {
+                $searchTerm = $request->search;
+                $query->whereHas('producto', function($q) use ($searchTerm) {
+                    $q->where('nombre', 'LIKE', "%{$searchTerm}%")
+                      ->orWhere('codigo', 'LIKE', "%{$searchTerm}%");
+                });
+            }
+
+            $inventarios = $query->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $inventarios,
+                'message' => 'Inventario obtenido exitosamente'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener el inventario',
+                'error' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
         }
-
-        if (request()->has('producto_id')) {
-            $query->where('producto_id', request('producto_id'));
-        }
-
-        // Mostrar alertas de stock bajo
-        if (request()->has('alertas')) {
-            $query->whereRaw('cantidad <= minimo_stock');
-        }
-
-        $inventarios = $query->paginate(15);
-        return InventarioResource::collection($inventarios);
     }
 
     /**
      * Store a newly created inventory record.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'sucursal_id' => 'required|exists:sucursals,id',
-            'producto_id' => 'required|exists:productos,id',
-            'cantidad' => 'required|integer|min:0',
-            'minimo_stock' => 'required|integer|min:0',
-            'ubicacion' => 'nullable|string|max:100'
-        ]);
+        try {
+            $validated = $request->validate([
+                'sucursal_id' => 'required|exists:sucursals,id',
+                'producto_id' => 'required|exists:productos,id',
+                'cantidad' => 'required|integer|min:0',
+                'minimo_stock' => 'required|integer|min:0',
+                'ubicacion' => 'nullable|string|max:100'
+            ]);
 
-        // Verificar que no exista ya un registro para esta sucursal y producto
-        $exists = Inventario::where('sucursal_id', $validated['sucursal_id'])
-            ->where('producto_id', $validated['producto_id'])
-            ->exists();
+            $exists = Inventario::where('sucursal_id', $validated['sucursal_id'])
+                ->where('producto_id', $validated['producto_id'])
+                ->exists();
 
-        if ($exists) {
+            if ($exists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ya existe un registro de inventario para este producto en la sucursal seleccionada'
+                ], 409);
+            }
+
+            $inventario = Inventario::create($validated);
+            $this->actualizarStockProducto($validated['producto_id']);
+
             return response()->json([
-                'message' => 'Ya existe un registro de inventario para este producto en la sucursal seleccionada'
-            ], 409);
+                'success' => true,
+                'data' => new InventarioResource($inventario->load(['sucursal', 'producto'])),
+                'message' => 'Registro de inventario creado exitosamente'
+            ], 201);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear el registro de inventario',
+                'error' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
         }
-
-        $inventario = Inventario::create($validated);
-
-        // Actualizar el stock general del producto
-        $this->actualizarStockProducto($validated['producto_id']);
-
-        return new InventarioResource($inventario->load(['sucursal', 'producto']));
     }
 
     /**
      * Display the specified inventory record.
-     *
-     * @param  \App\Models\Inventario  $inventario
-     * @return \Illuminate\Http\Response
      */
     public function show(Inventario $inventario)
     {
-        return new InventarioResource($inventario->load(['sucursal', 'producto']));
+        try {
+            return response()->json([
+                'success' => true,
+                'data' => new InventarioResource($inventario->load(['sucursal', 'producto'])),
+                'message' => 'Registro de inventario obtenido exitosamente'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener el registro de inventario',
+                'error' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
+        }
     }
 
     /**
      * Update the specified inventory record.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Inventario  $inventario
-     * @return \Illuminate\Http\Response
      */
     public function update(Request $request, Inventario $inventario)
     {
-        $validated = $request->validate([
-            'cantidad' => 'sometimes|integer|min:0',
-            'minimo_stock' => 'sometimes|integer|min:0',
-            'ubicacion' => 'nullable|string|max:100'
-        ]);
+        try {
+            $validated = $request->validate([
+                'cantidad' => 'sometimes|integer|min:0',
+                'minimo_stock' => 'sometimes|integer|min:0',
+                'ubicacion' => 'nullable|string|max:100'
+            ]);
 
-        $inventario->update($validated);
+            $inventario->update($validated);
 
-        // Si se actualizó la cantidad, actualizar el stock general del producto
-        if ($request->has('cantidad')) {
-            $this->actualizarStockProducto($inventario->producto_id);
+            if ($request->has('cantidad')) {
+                $this->actualizarStockProducto($inventario->producto_id);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => new InventarioResource($inventario->load(['sucursal', 'producto'])),
+                'message' => 'Registro de inventario actualizado exitosamente'
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el registro de inventario',
+                'error' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
         }
-
-        return new InventarioResource($inventario->load(['sucursal', 'producto']));
     }
 
     /**
      * Remove the specified inventory record.
-     *
-     * @param  \App\Models\Inventario  $inventario
-     * @return \Illuminate\Http\Response
      */
     public function destroy(Inventario $inventario)
     {
-        $productoId = $inventario->producto_id;
-        $inventario->delete();
+        try {
+            $productoId = $inventario->producto_id;
+            $inventario->delete();
+            $this->actualizarStockProducto($productoId);
 
-        // Actualizar el stock general del producto
-        $this->actualizarStockProducto($productoId);
-
-        return response()->json(null, 204);
+            return response()->json([
+                'success' => true,
+                'message' => 'Registro de inventario eliminado exitosamente'
+            ], 200);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar el registro de inventario',
+                'error' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
+        }
     }
 
     /**
      * Transfer inventory between branches.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
      */
     public function transferir(Request $request)
     {
-        $validated = $request->validate([
-            'producto_id' => 'required|exists:productos,id',
-            'sucursal_origen_id' => 'required|exists:sucursals,id',
-            'sucursal_destino_id' => 'required|exists:sucursals,id|different:sucursal_origen_id',
-            'cantidad' => 'required|integer|min:1',
-            'motivo' => 'nullable|string|max:255'
-        ]);
-
-        return DB::transaction(function () use ($validated) {
-            // Verificar stock en sucursal origen
-            $inventarioOrigen = Inventario::where('sucursal_id', $validated['sucursal_origen_id'])
-                ->where('producto_id', $validated['producto_id'])
-                ->firstOrFail();
-
-            if ($inventarioOrigen->cantidad < $validated['cantidad']) {
-                return response()->json([
-                    'message' => 'No hay suficiente stock en la sucursal de origen'
-                ], 400);
-            }
-
-            // Reducir stock en origen
-            $inventarioOrigen->decrement('cantidad', $validated['cantidad']);
-
-            // Aumentar stock en destino (o crear registro si no existe)
-            $inventarioDestino = Inventario::firstOrNew([
-                'sucursal_id' => $validated['sucursal_destino_id'],
-                'producto_id' => $validated['producto_id']
+        try {
+            $validated = $request->validate([
+                'producto_id' => 'required|exists:productos,id',
+                'sucursal_origen_id' => 'required|exists:sucursals,id',
+                'sucursal_destino_id' => 'required|exists:sucursals,id|different:sucursal_origen_id',
+                'cantidad' => 'required|integer|min:1',
+                'motivo' => 'nullable|string|max:255'
             ]);
 
-            if (!$inventarioDestino->exists) {
-                $inventarioDestino->cantidad = 0;
-                $inventarioDestino->minimo_stock = $inventarioOrigen->minimo_stock;
-                $inventarioDestino->ubicacion = 'N/A';
-            }
+            $result = DB::transaction(function () use ($validated) {
+                $inventarioOrigen = Inventario::where('sucursal_id', $validated['sucursal_origen_id'])
+                    ->where('producto_id', $validated['producto_id'])
+                    ->firstOrFail();
 
-            $inventarioDestino->increment('cantidad', $validated['cantidad']);
-            $inventarioDestino->save();
+                if ($inventarioOrigen->cantidad < $validated['cantidad']) {
+                    throw new \Exception('No hay suficiente stock en la sucursal de origen');
+                }
 
-            // Actualizar stock general del producto
-            $this->actualizarStockProducto($validated['producto_id']);
+                $inventarioOrigen->decrement('cantidad', $validated['cantidad']);
 
-            // Registrar la transferencia (podrías crear un modelo para esto)
-            DB::table('transferencias_inventario')->insert([
-                'producto_id' => $validated['producto_id'],
-                'sucursal_origen_id' => $validated['sucursal_origen_id'],
-                'sucursal_destino_id' => $validated['sucursal_destino_id'],
-                'cantidad' => $validated['cantidad'],
-                'motivo' => $validated['motivo'] ?? null,
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
+                $inventarioDestino = Inventario::firstOrNew([
+                    'sucursal_id' => $validated['sucursal_destino_id'],
+                    'producto_id' => $validated['producto_id']
+                ]);
+
+                if (!$inventarioDestino->exists) {
+                    $inventarioDestino->cantidad = 0;
+                    $inventarioDestino->minimo_stock = $inventarioOrigen->minimo_stock;
+                    $inventarioDestino->ubicacion = 'N/A';
+                }
+
+                $inventarioDestino->increment('cantidad', $validated['cantidad']);
+                $inventarioDestino->save();
+
+                $this->actualizarStockProducto($validated['producto_id']);
+
+                DB::table('transferencias_inventario')->insert([
+                    'producto_id' => $validated['producto_id'],
+                    'sucursal_origen_id' => $validated['sucursal_origen_id'],
+                    'sucursal_destino_id' => $validated['sucursal_destino_id'],
+                    'cantidad' => $validated['cantidad'],
+                    'motivo' => $validated['motivo'] ?? null,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+
+                return [
+                    'origen' => new InventarioResource($inventarioOrigen),
+                    'destino' => new InventarioResource($inventarioDestino)
+                ];
+            });
 
             return response()->json([
-                'message' => 'Transferencia completada exitosamente',
-                'origen' => new InventarioResource($inventarioOrigen),
-                'destino' => new InventarioResource($inventarioDestino)
+                'success' => true,
+                'data' => $result,
+                'message' => 'Transferencia completada exitosamente'
             ]);
-        });
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al transferir inventario: ' . $e->getMessage(),
+                'error' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
+        }
     }
 
     /**
      * Update the general product stock based on inventory records.
-     *
-     * @param  int  $productoId
-     * @return void
      */
     protected function actualizarStockProducto($productoId)
     {
@@ -210,5 +288,30 @@ class InventarioController extends Controller
 
         Producto::where('id', $productoId)
             ->update(['stock' => $totalStock]);
+    }
+
+    /**
+     * Get inventory alerts (low stock).
+     */
+    public function alertas(Request $request)
+    {
+        try {
+            $alertas = Inventario::with(['sucursal', 'producto'])
+                ->whereRaw('cantidad <= minimo_stock')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $alertas,
+                'message' => 'Alertas de inventario obtenidas exitosamente'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener alertas de inventario',
+                'error' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
+        }
     }
 }

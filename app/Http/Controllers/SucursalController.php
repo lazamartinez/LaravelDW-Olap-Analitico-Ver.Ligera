@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use App\Http\Resources\SucursalResource;
 use App\Events\SucursalUpdated;
 use Illuminate\Support\Facades\DB;
-use Str;
+use Illuminate\Support\Str;
 
 class SucursalController extends Controller
 {
@@ -19,96 +19,246 @@ class SucursalController extends Controller
         $this->sucursalService = $sucursalService;
     }
 
-    public function index(Request $request)
+    /**
+     * Display a listing of the resource for web.
+     */
+    public function index()
     {
-        $query = Sucursal::withCount(['ventas', 'productos', 'inventarios']);
-        
-        if ($request->has('activa')) {
-            $query->where('activa', $request->boolean('activa'));
-        }
+        try {
+            $sucursales = Sucursal::withCount(['ventas', 'productos', 'inventarios'])->get();
 
-        $sucursales = $query->paginate(15);
-        return SucursalResource::collection($sucursales);
+            return response()->json([
+                'success' => true,
+                'data' => $sucursales,
+                'message' => 'Sucursales obtenidas exitosamente'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener las sucursales',
+                'error' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
+        }
     }
 
-    public function store(Request $request)
+    /**
+     * Display a listing of the resource for API.
+     */
+    public function apiIndex(Request $request)
     {
-        $validated = $this->validateRequest($request);
-        
-        return DB::transaction(function () use ($validated) {
-            $sucursal = Sucursal::create($validated);
-            
-            // Configuración inicial del contenedor Docker
-            $dockerConfig = $this->sucursalService->setupDockerContainer($sucursal);
-            
-            $sucursal->update([
-                'docker_config' => $dockerConfig,
-                'api_secret' => \Illuminate\Support\Str::random(64) // Usar Str correctamente
+        try {
+            $query = Sucursal::withCount(['ventas', 'productos', 'inventarios']);
+
+            if ($request->has('activa')) {
+                $query->where('activa', $request->boolean('activa'));
+            }
+
+            if ($request->has('search')) {
+                $searchTerm = $request->search;
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('nombre', 'LIKE', "%{$searchTerm}%")
+                        ->orWhere('ciudad', 'LIKE', "%{$searchTerm}%")
+                        ->orWhere('direccion', 'LIKE', "%{$searchTerm}%");
+                });
+            }
+
+            $sucursales = $query->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $sucursales,
+                'message' => 'Sucursales obtenidas exitosamente'
             ]);
-            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener las sucursales',
+                'error' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
+        }
+    }
+
+    /**
+     * Store a newly created resource in storage for API.
+     */
+    public function apiStore(Request $request)
+    {
+        try {
+            $validated = $this->validateRequest($request);
+
+            $sucursal = DB::transaction(function () use ($validated) {
+                $sucursal = Sucursal::create($validated);
+
+                // Configuración inicial del contenedor Docker
+                $dockerConfig = $this->sucursalService->setupDockerContainer($sucursal);
+
+                $sucursal->update([
+                    'docker_config' => $dockerConfig,
+                    'api_secret' => Str::random(64)
+                ]);
+
+                event(new SucursalUpdated($sucursal->id, [
+                    'action' => 'created',
+                    'data' => $sucursal
+                ]));
+
+                return $sucursal;
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => new SucursalResource($sucursal),
+                'message' => 'Sucursal creada exitosamente'
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear la sucursal',
+                'error' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
+        }
+    }
+
+    /**
+     * Display the specified resource for API.
+     */
+    public function apiShow(Sucursal $sucursal)
+    {
+        try {
+            $sucursal->load([
+                'productos' => fn($q) => $q->withSum('hechoVentas as ventas_total', 'monto_total'),
+                'ventas' => fn($q) => $q->latest()->limit(5)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => new SucursalResource($sucursal),
+                'message' => 'Sucursal obtenida exitosamente'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener la sucursal',
+                'error' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the specified resource in storage for API.
+     */
+    public function apiUpdate(Request $request, Sucursal $sucursal)
+    {
+        try {
+            $validated = $this->validateRequest($request, $sucursal);
+
+            $sucursal->update($validated);
+
             event(new SucursalUpdated($sucursal->id, [
-                'action' => 'created',
+                'action' => 'updated',
                 'data' => $sucursal
             ]));
-            
-            return new SucursalResource($sucursal);
-        });
+
+            return response()->json([
+                'success' => true,
+                'data' => new SucursalResource($sucursal),
+                'message' => 'Sucursal actualizada exitosamente'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar la sucursal',
+                'error' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
+        }
     }
 
-
-    public function show(Sucursal $sucursal)
+    /**
+     * Remove the specified resource from storage for API.
+     */
+    public function apiDestroy(Sucursal $sucursal)
     {
-        $sucursal->load([
-            'productos' => fn($q) => $q->withSum('hechoVentas as ventas_total', 'monto_total'),
-            'ventas' => fn($q) => $q->latest()->limit(5)
-        ]);
-        
-        return new SucursalResource($sucursal);
+        try {
+            $this->sucursalService->removeDockerContainer($sucursal);
+            $sucursal->delete();
+
+            event(new SucursalUpdated($sucursal->id, [
+                'action' => 'deleted'
+            ]));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sucursal eliminada exitosamente'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar la sucursal',
+                'error' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
+        }
     }
 
-    public function update(Request $request, Sucursal $sucursal)
+    /**
+     * Get metrics for a specific branch for API.
+     */
+    public function apiMetrics(Sucursal $sucursal)
     {
-        $validated = $this->validateRequest($request, $sucursal);
-        
-        $sucursal->update($validated);
-        
-        event(new SucursalUpdated($sucursal->id, [
-            'action' => 'updated',
-            'data' => $sucursal
-        ]));
-        
-        return new SucursalResource($sucursal);
+        try {
+            $metrics = $this->sucursalService->calculateMetrics($sucursal);
+
+            return response()->json([
+                'success' => true,
+                'data' => $metrics,
+                'message' => 'Métricas de la sucursal obtenidas exitosamente'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener las métricas de la sucursal',
+                'error' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
+        }
     }
 
-    public function destroy(Sucursal $sucursal)
+    /**
+     * Get realtime transactions for a specific branch for API.
+     */
+    public function apiRealtimeTransactions(Sucursal $sucursal)
     {
-        $this->sucursalService->removeDockerContainer($sucursal);
-        
-        $sucursal->delete();
-        
-        event(new SucursalUpdated($sucursal->id, [
-            'action' => 'deleted'
-        ]));
-        
-        return response()->noContent();
-    }
+        try {
+            $transactions = $this->sucursalService->getRealtimeTransactions($sucursal);
 
-    public function metrics(Sucursal $sucursal)
-    {
-        $metrics = $this->sucursalService->calculateMetrics($sucursal);
-        return response()->json($metrics);
-    }
-
-    public function realtimeTransactions(Sucursal $sucursal)
-    {
-        $transactions = $this->sucursalService->getRealtimeTransactions($sucursal);
-        return response()->json($transactions);
+            return response()->json([
+                'success' => true,
+                'data' => $transactions,
+                'message' => 'Transacciones en tiempo real obtenidas exitosamente'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener las transacciones en tiempo real',
+                'error' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
+        }
     }
 
     protected function validateRequest(Request $request, $sucursal = null)
     {
         return $request->validate([
-            'nombre' => 'required|string|max:255|unique:sucursals,nombre,'.($sucursal?->id ?: 'NULL'),
+            'nombre' => 'required|string|max:255|unique:sucursals,nombre,' . ($sucursal?->id ?: 'NULL'),
             'direccion' => 'required|string',
             'ciudad' => 'required|string',
             'pais' => 'required|string',

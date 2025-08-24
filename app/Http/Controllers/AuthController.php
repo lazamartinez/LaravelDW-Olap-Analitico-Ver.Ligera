@@ -104,4 +104,14 @@ class AuthController extends Controller
             'message' => 'Sesión cerrada correctamente'
         ]);
     }
+
+    // API: Obtener usuario autenticado
+    public function apiUser(Request $request)
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $request->user(),
+            'message' => 'Usuario obtenido exitosamente'
+        ]);
+    }
 }
